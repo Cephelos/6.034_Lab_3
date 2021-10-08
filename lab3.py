@@ -9,12 +9,25 @@ from test_problems import get_pokemon_problem
 
 def has_empty_domains(csp) :
     """Returns True if the problem has one or more empty domains, otherwise False"""
-    raise NotImplementedError
+
+    if [] in csp.domains.values():
+        return True
+    return False
 
 def check_all_constraints(csp) :
     """Return False if the problem's assigned values violate some constraint,
     otherwise True"""
-    raise NotImplementedError
+
+    for i in csp.domains:
+        for j in csp.domains:
+            for c in csp.constraints_between(i,j):
+                if csp.get_assignment(i) is not None and csp.get_assignment(j) is not None and not c.check(csp.get_assignment(i), csp.get_assignment(j)):
+
+                    return False
+
+
+    return True
+
 
 
 #### Part 2: Depth-First Constraint Solver #####################################
@@ -26,7 +39,32 @@ def solve_constraint_dfs(problem) :
     2. the number of extensions made (the number of problems popped off the agenda).
     If no solution was found, return None as the first element of the tuple.
     """
-    raise NotImplementedError
+    stack = [problem]
+    extension_count = 0
+
+    while stack:
+        problem = stack.pop(0)
+        extension_count += 1
+        if has_empty_domains(problem) or not check_all_constraints(problem):
+            continue
+
+        if not problem.unassigned_vars:
+            return problem.assignments, extension_count
+
+        next_var = problem.pop_next_unassigned_var()
+
+        new_problems = []
+        for i in problem.get_domain(next_var):
+            new_problem = problem.copy().set_assignment(next_var, i)
+            new_problems.append(new_problem)
+
+        stack = new_problems + stack
+    return None, extension_count
+
+
+
+
+
 
 
 # QUESTION 1: How many extensions does it take to solve the Pokemon problem
@@ -35,12 +73,12 @@ def solve_constraint_dfs(problem) :
 # Hint: Use get_pokemon_problem() to get a new copy of the Pokemon problem
 #    each time you want to solve it with a different search method.
 
-ANSWER_1 = None
+ANSWER_1 = 20
 
 
 #### Part 3: Forward Checking ##################################################
 
-def eliminate_from_neighbors(csp, var) :
+def eliminate_from_neighbors(csp, var):
     """
     Eliminates incompatible values from var's neighbors' domains, modifying
     the original csp.  Returns an alphabetically sorted list of the neighboring
@@ -48,7 +86,33 @@ def eliminate_from_neighbors(csp, var) :
     once.  If no domains were reduced, returns empty list.
     If a domain is reduced to size 0, quits immediately and returns None.
     """
-    raise NotImplementedError
+    print(csp, "uno")
+    marked = []
+    altered = set()
+
+    for n in csp.get_neighbors(var):
+        for c in csp.constraints_between(var, n):
+            for j in csp.get_domain(n):
+                bad_val = True
+                for i in csp.get_domain(var):
+
+                    if c.check(i, j):
+                        bad_val = False
+
+                if bad_val:
+                    marked.append((n, j))
+                    altered.add(n)
+
+    for n, j in marked:
+        csp.eliminate(n, j)
+
+        if len(csp.get_domain(n)) == 0:
+            return None
+
+    print(csp, "dos")
+    altered = list(altered)
+    altered.sort()
+    return altered
 
 # Because names give us power over things (you're free to use this alias)
 forward_check = eliminate_from_neighbors
@@ -167,9 +231,9 @@ def all_different(variables) :
 
 #### SURVEY ####################################################################
 
-NAME = None
-COLLABORATORS = None
-HOW_MANY_HOURS_THIS_LAB_TOOK = None
-WHAT_I_FOUND_INTERESTING = None
-WHAT_I_FOUND_BORING = None
+NAME = "Theodore Calabrese"
+COLLABORATORS = ""
+HOW_MANY_HOURS_THIS_LAB_TOOK = 8
+WHAT_I_FOUND_INTERESTING = 'I like dfs'
+WHAT_I_FOUND_BORING = 'Very difficult overall'
 SUGGESTIONS = None
